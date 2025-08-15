@@ -42,10 +42,10 @@ public:
     const reference at(size_type pos) const;
 
     pointer begin();
-    const pointer begin() const;
+    pointer begin() const;
     
     pointer end();
-    const pointer end() const;
+    pointer end() const;
 
     bool empty() const;
     

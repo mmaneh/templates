@@ -13,7 +13,7 @@ MyVector<T>::MyVector(size_type sz) : size{sz}, capacity{sz} {
 }
 
 template<typename T>
-MyVector<T>::MyVector(size_t sz, const size_type val) : size{sz}, capacity{sz} {
+MyVector<T>::MyVector(size_t sz, const value_type& val) : size{sz}, capacity{sz} {
     data = new value_type[size];
     for (size_type i = 0; i < size; ++i) {
         data[i] = val;
@@ -120,7 +120,7 @@ typename MyVector<T>::pointer MyVector<T>::begin() {
 }
 
 template<typename T>
-const typename MyVector<T>::pointer MyVector<T>::begin() const {
+typename MyVector<T>::pointer MyVector<T>::begin() const {
     return data;
 }
 
@@ -130,7 +130,7 @@ typename MyVector<T>::pointer MyVector<T>::end() {
 }
 
 template<typename T>
-const typename MyVector<T>::pointer MyVector<T>::end() const {
+typename MyVector<T>::pointer MyVector<T>::end() const {
     return data + size;
 }
 
@@ -140,12 +140,12 @@ bool MyVector<T>::empty() const {
 }
 
 template<typename T>
-typename MyVector<T>::size_type MyVector<T>::size_() {
+typename MyVector<T>::size_type MyVector<T>::size_() const {
     return size;
 }
 
 template<typename T>
-typename MyVector<T>::size_type MyVector<T>::capacity_() {
+typename MyVector<T>::size_type MyVector<T>::capacity_() const {
     return capacity;
 }
 
@@ -190,7 +190,7 @@ void MyVector<T>::pop_back() {
 }
 
 template<typename T>
-typename MyVector<T>::pointer MyVector<T>::insert(size_type pos, size_type value) {
+typename MyVector<T>::pointer MyVector<T>::insert(size_type pos, const value_type& value) {
     if(pos > size) throw std::out_of_range("out of range");
     if(size == capacity) {
         size_type newCapacity = (capacity == 0) ? 1 : capacity * 2;
@@ -266,4 +266,5 @@ template<typename T>
 bool operator>=(const MyVector<T>& obj1, const MyVector<T>& obj2) {
     return !(obj1 < obj2);
 }
+template class MyVector<int>;
 
