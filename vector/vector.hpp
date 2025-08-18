@@ -20,13 +20,15 @@ private:
     pointer data;
 
 public:
-    MyVector();
-    MyVector(size_type sz);
-    MyVector(size_t sz, const value_type& val);
+    MyVector() noexcept;
+    explicit MyVector(size_t sz, const value_type& val = T());
     MyVector(const MyVector& other);
     MyVector(MyVector&& other) noexcept;
+    MyVector(const std::initializer_list<T> &il);
+
     MyVector& operator=(const MyVector& other);
     MyVector& operator=(MyVector&& other) noexcept;
+    MyVector& operator=(const std::initializer_list<T> &il);
     ~MyVector();
 
     reference operator[](size_type idx);
@@ -41,6 +43,9 @@ public:
     reference at(size_type pos);
     const reference at(size_type pos) const;
 
+    pointer data_();
+    const pointer data_() const noexcept;
+
     pointer begin();
     pointer begin() const;
     
@@ -53,18 +58,26 @@ public:
     
     size_type capacity_() const;
 
+    void reserve(size_type newCap);
+
     void clear();
+       
+    void insert(size_type pos, const value_type& value);
+    void insert(size_type pos, T&& value);
+    void insert(size_type pos, size_type count, const value_type& val);
     
+    template <typename ... Args>
+    void emplace(size_type pos, Args&& ...args);
+    pointer erase(size_type pos);
+    pointer erase(size_type first, size_type last);
     void push_back(const reference value);
     void push_back(T&& value);
     
-    void pop_back();
-    
-    pointer insert(size_type pos, const value_type& value);
-    
-    pointer erase(size_type pos);
-    
+    template <typename ... Args>
+    void emplace_back(Args && ... args);
+    void resize (size_type count, const value_type& val = T());
     void swap(MyVector& other);
+    void pop_back();
 };
 
 

@@ -5,27 +5,34 @@
 #include <iostream>
 
 template<typename T>
-MyVector<T>::MyVector() : size{0}, capacity{0}, data{nullptr} {}
+MyVector<T>::MyVector() noexcept : size{0}, capacity{0}, data{nullptr} {}
 
 template<typename T>
-MyVector<T>::MyVector(size_type sz) : size{sz}, capacity{sz} {
-    data = new value_type[size];
-}
-
-template<typename T>
-MyVector<T>::MyVector(size_t sz, const value_type& val) : size{sz}, capacity{sz} {
-    data = new value_type[size];
-    for (size_type i = 0; i < size; ++i) {
-        data[i] = val;
+MyVector<T>::MyVector(size_t sz, const value_type& val) : MyVector {} {
+    data = static_cast<T*>(operator new(sizeof(T) * count));
+    try {
+        std::uninitialized_fill_n(data, count, value);
+        size = capacity = count;
+    }
+    catch(...) {
+        operator delete(data);
+        throw;
     }
 }
 
 template<typename T>
-MyVector<T>::MyVector(const MyVector& other) : size{other.size}, capacity{other.capacity} {
-    data = new value_type[size];
-    for (size_type i = 0; i < size; ++i) {
-        data[i] = other.data[i];
-    }
+MyVector<T>::MyVector(const MyVector& other) : MyVector {} {
+   data = static_cast<T*> (operator new(sizeof(T) * other.capacity));
+
+   try{
+        std::uninitialized_copy_n(other.data, other.size, data);
+        size = other.size;
+        capacity = other.capacity;
+   }
+   catch(...) {
+        operator delete (data);
+        throw;
+   }
 }
 
 template<typename T>
@@ -35,16 +42,24 @@ MyVector<T>::MyVector(MyVector&& other) noexcept : size{other.size}, capacity{ot
     other.data = nullptr;
 }
 
+template <typename T>
+MyVector<T>::MyVector(const std::initializer_list<T>& il) {
+    data = static_cast<T*>(operator new (sizeof(T) * il.size()));
+
+    try{
+        std::uninitialized_copy_n(il.begin(), il.end(), data);
+        capacity = size = il.size();
+    }
+    catch(...) {
+        operator delet(data);
+        throw;
+    }
+}
 template<typename T>
 MyVector<T>& MyVector<T>::operator=(const MyVector& other) {
     if(this != &other) {
-        delete[] data;
-        size = other.size;
-        capacity = other.capacity;
-        data = new value_type[size];
-        for(size_type i = 0; i < size; ++i) {
-            data[i] = other.data[i];
-        }
+        MyVector<T> tmp(other);
+        swap(tmp);
     }
     return *this;
 }
@@ -52,20 +67,23 @@ MyVector<T>& MyVector<T>::operator=(const MyVector& other) {
 template<typename T>
 MyVector<T>& MyVector<T>::operator=(MyVector&& other) noexcept {
     if(this != &other) {
-        delete[] data;
-        size = other.size;
-        capacity = other.capacity;
-        data = other.data;
-        other.size = 0;
-        other.capacity = 0;
-        other.data = nullptr;       
+        MyVector<T> tmp(std::move(other));
+        swap(tmp);
     }
     return * this;
 }
 
+template <typename T>
+MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T> &il) {
+    Vector<T> tmp(il);
+    swap(tmp);
+    return *this;
+}
+
 template<typename T>
 MyVector<T>::~MyVector() {
-    delete[] data;
+    clear();
+    operator delete(data);
 }
 
 template<typename T>
@@ -96,6 +114,16 @@ typename MyVector<T>::reference MyVector<T>::back() {
 template<typename T>
 const typename MyVector<T>::reference MyVector<T>::back() const {
     return data[size - 1];
+}
+
+template <typename T>
+typename MyVector<T>::pointer MyVector<T>::data_() {
+    return data;
+}
+
+template <typename T>
+const typename MyVector<T>::pointer MyVector<T>::data_() const noexcept{
+    return data;
 }
 
 template<typename T>
@@ -148,10 +176,78 @@ template<typename T>
 typename MyVector<T>::size_type MyVector<T>::capacity_() const {
     return capacity;
 }
-
+template <typename T>
+void MyVector<T>::reserve(typename MyVector<T>::size_type newCap){
+    if(newCap <= capacity) return;
+    pointer Newdata = static_cast<T*>(operator new(sizeof(T) * newCap));
+    size_type i = 0;
+    try {
+        for(; i < size; ++i) {
+            new(&Newdata) T(data[i]);
+        }
+    }catch (...){
+        for (size_type j = 0; j < size; ++j) {
+            NewData[i].~T();
+        }
+        operator delete(Newdata);
+        throw;
+    }
+    size_type tmp = size;
+    clear;
+    operator delete(data);
+    size = tmp;
+    cpacity = newCap;
+    data = Newdata;
+}
 template<typename T>
 void MyVector<T>::clear() {
+    for (size_type i = 0; i < size; ++i) {
+        data[i].~T();
+    }
     size = 0;
+}
+
+template<typename T>
+void MyVector<T>::insert(size_type pos, const value_type& value) {
+    pointer Newdata = nullptr;
+    size_type newCap = capacity;
+    if(size == capacity) {
+        Newdata = static_cast<T*>(operator new(sizeof(T) * capacity * 2));
+        newCap = capacity * 2;
+    }else {
+        Newdata = static_cast<T*>(operator new(sizeof(T) * capacity));
+    }
+
+    try {
+
+    for (size_type i = 0; i < pos; ++i) {
+        new(&Newdata[i]) T(std::move(data[i]));
+    }
+
+    
+        new(&Newdata[pos]) T(value);
+
+    }catch (...){
+        for (size_type i = 0; i < size; ++i) {
+            new(data[i]) T(std::move(Newdata[i]));
+        }
+        operator delete(Newdata);
+    }
+
+    for (size_type i = pos; i < size + 1 ; ++i) {
+        new (&Newdata[i]) T(std::move(data[i - 1]));
+    }
+    
+    operator delete(data);
+    data = Newdata;
+    ++size;
+    capacity = newCap;
+}
+////////////////////////////////////////////////////////////////
+//////////////////edit////////////////////////////
+template <typename T>
+void MyVector<T>::insert(size_type pos, T&& value) {
+   
 }
 
 template<typename T>
@@ -185,38 +281,6 @@ void MyVector<T>::push_back(T&& value) {
 }
 
 template<typename T>
-void MyVector<T>::pop_back() {
-    --size;
-}
-
-template<typename T>
-typename MyVector<T>::pointer MyVector<T>::insert(size_type pos, const value_type& value) {
-    if(pos > size) throw std::out_of_range("out of range");
-    if(size == capacity) {
-        size_type newCapacity = (capacity == 0) ? 1 : capacity * 2;
-        pointer NewData = new value_type[newCapacity];
-        for (size_type i = 0; i < pos; ++i) {
-            NewData[i] = data[i];
-        } 
-        NewData[pos] = value;
-        for (size_type i = pos; i < size; ++i) {
-            NewData[i + 1] = data[i];
-        }
-        delete[] data;
-        data = NewData;
-        capacity = newCapacity;
-        ++size;
-    } else {
-        for (size_type i = pos; i < size; ++i) {
-            data[i + 1] = data[i];
-        }
-        data[pos] = value;
-        ++size;
-    }
-    return &data[pos];
-}
-
-template<typename T>
 typename MyVector<T>::pointer MyVector<T>::erase(size_type pos) {
     if(pos > size) throw std::out_of_range("out of range");
     for (size_type i = pos; i < size - 1; ++i) {
@@ -226,6 +290,11 @@ typename MyVector<T>::pointer MyVector<T>::erase(size_type pos) {
     return &data[pos];
 }
 
+template<typename T>
+void MyVector<T>::pop_back() {
+    data[size - 1].~T();
+    --size;
+}
 template<typename T>
 void MyVector<T>::swap(MyVector& other) {
     std::swap(data, other.data);
