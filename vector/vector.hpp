@@ -11,8 +11,11 @@ class MyVector {
 public:
     using value_type = T;
     using size_type = size_t;
-    using reference = value_type&;
-    using pointer = value_type*;
+    
+    class Iterator;
+    class ConstIterator;
+    class ReverseIterator; 
+   
 
 private:
     size_type size;
@@ -46,11 +49,14 @@ public:
     pointer data_();
     const pointer data_() const noexcept;
 
-    pointer begin();
-    pointer begin() const;
+    Iterator begin();
+    ConstIterator begin() const;
     
-    pointer end();
-    pointer end() const;
+    Iterator end();
+    ConstIterator end() const;
+
+    ReverseIterator rbegin();
+    ReverseIterator rend();
 
     bool empty() const;
     
@@ -78,6 +84,154 @@ public:
     void resize (size_type count, const value_type& val = T());
     void swap(MyVector& other);
     void pop_back();
+
+    template <typename T>
+class Iterator{
+    public:
+        using value_type = T;
+        using pointer = T*;
+        using reference = T&;
+    private:
+        pointer ptr;
+
+    public:
+        Iterator(pointer pt) : ptr{pt} {}
+        reference operator*() {
+            return *ptr;
+        }
+        pointer operator->() {
+            return ptr;
+        }
+
+        Iterator& operator++() {
+            ++ptr;
+            return *this;
+        }
+
+        Iterator& operator++(int) {
+            iterator tmp = *this;
+            ++ptr;
+            return * tmp;
+        }
+
+        Iterator& operator--() {
+            --ptr;
+            return *this;
+        }
+
+        Iterator& operator--(int) {
+            iterator tmp = *this;
+            --ptr;
+            return * tmp;
+        }
+
+	bool operator==(const Iterator& other) const {
+	       	return ptr == other.ptr; 
+	}
+
+        bool operator!=(const Iterator& other) const { 
+		return ptr != other.ptr; 
+	}
+};
+
+class ConstIterator {
+    public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+    private:
+
+	pointer ptr;
+    public:
+
+        ConstIterator(const pointer pt) : ptr(pt) {}
+        ConstIterator(const Iterator& it) : ptr(it.operator->()) {}
+
+        const T& operator*() const {
+	       	return *ptr; 
+	}
+        const T* operator->() const { 
+		return ptr; 
+	}
+
+        ConstIterator& operator++() { 
+		++ptr; 
+		return *this; 
+	}
+        ConstIterator operator++(int) { 
+		ConstIterator tmp = *this; 
+		++ptr; 
+		return tmp; 
+	}
+        ConstIterator& operator--() { 
+		--ptr; return *this; 
+	}
+        ConstIterator operator--(int) { 
+		ConstIterator tmp = *this; 
+		--ptr; 
+		return tmp; 
+	}
+
+        bool operator==(const ConstIterator& other) const { 
+		return ptr == other.ptr; 
+	}
+        bool operator!=(const ConstIterator& other) const { 
+		return ptr != other.ptr; 
+	}
+    };
+
+
+template <typename Iterator>
+class MoveIterator {
+public:
+
+    using iterator_category = typename std::iterator_traits<Iterator>::iterator_category;
+    using value_type        = typename std::iterator_traits<Iterator>::value_type;
+    using difference_type   = typename std::iterator_traits<Iterator>::difference_type;
+    using pointer = typename std::iterator_traits<Iterator>::pointer;
+    using reference = typename std::iterator_traits<Iterator>::reference;
+
+private:
+    Iterator it;
+
+public:
+    explicit MoveIterator(Iterator i) : it{i} {}
+    MoveIterator& operator++() {
+        ++it;
+        return *this;
+    }
+    MoveIterator operator++(int) {
+        move_iterator tmp = * this;
+        ++it;
+        return tmp;
+    }
+
+    MoveIterator& operator--() {
+        --it;
+        return *this;
+    }
+    MoveIterator operator--(int) {
+        move_iterator tmp = * this;
+        --it;
+        return tmp;
+    }
+    pointer operator-> () {
+        return it;
+    }
+    reference operator*() {
+        return std::move(*it);
+    }
+
+    bool operator==(const move_iterator& other) {
+        return it == other.it;
+    }
+    bool operator!=(const move_iterator& other) {
+        return it != other.it;
+    }
+};
+
 };
 
 

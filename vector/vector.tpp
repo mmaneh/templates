@@ -247,7 +247,94 @@ void MyVector<T>::insert(size_type pos, const value_type& value) {
 //////////////////edit////////////////////////////
 template <typename T>
 void MyVector<T>::insert(size_type pos, T&& value) {
-   
+     if (size == capacity) {
+        reserve(capacity * 2);
+    }
+
+    for (size_type i = size; i >= pos; --i) {
+        new (&data[i]) T(std::move(data[i - 1]));
+    }
+    new (&data[pos]) T(std::move(value));
+
+    ++size;
+}
+template <typename T>
+void Vector<T>::insert(size_type pos, size_type count, const T& value) {
+    T* newData = nullptr;
+    size_type newCapacity = capacity;
+
+    if (size + count > capacity) {
+        newData = static_cast<T *>(operator new(sizeof(T) * (size + count) * 2));
+        newCapacity = (size + count) * 2;
+    }
+    else {
+        
+        newData = static_cast<T *>(operator new(sizeof(T) * capacity));
+    }
+
+    for (size_type i = 0; i < pos; ++i) {
+        new (&newData[i]) T(std::move(data[i]));
+    }
+
+    try {
+        std::uninitialized_fill_n(newData + pos, count, value);
+    }
+    catch (...) {
+        for (size_type i = 0; i < pos; ++i) {
+            new (&data[i]) T(std::move(newData[i]));
+        }
+        operator delete(newData);
+        throw;
+    }
+
+    for (size_type i = size + count - 1; i > pos + count; --i) {
+        new (&newData[i]) T(std::move(data[i - count]));
+    }
+
+    operator delete(data);
+    data = newData;
+    size += count;
+    capacity = newCapacity;
+}
+
+template <typename T>
+template <typename... Args>
+void Vector<T>::emplace(size_type pos, Args &&...args) {
+    T* newData = nullptr;
+    size_type newCapacity = capacity;
+
+    if (size == capacity) {
+	newCapacity = (capacity == 0 ? 1 : capacity * 2);
+        newData = static_cast<T *>(operator new(sizeof(T) * newCapacity));
+       
+    }
+    else {
+        newData = static_cast<T *>(operator new(sizeof(T) * capacity));
+    }
+
+    for (size_type i = 0; i < pos; ++i) {
+        new (&newData[i]) T(std::move(data[i]));
+    }
+
+    try {
+        new (&newData[pos]) T(std::forward<Args>(args)...);
+    }
+    catch (...) {
+        for (size_type i = 0; i < pos; ++i) {
+            new (data[i]) T(std::move(newData[i]));
+        }
+        operator delete(newData);
+        throw;
+    }
+
+    for (size_type i = size; i > pos; --i) {
+        new (&newData[i]) T(std::move(data[i - 1]));
+    }
+
+    operator delete(data);
+    data = newData;
+    ++size;
+    capacity = newCapacity;
 }
 
 template<typename T>
@@ -289,6 +376,17 @@ typename MyVector<T>::pointer MyVector<T>::erase(size_type pos) {
     --size;
     return &data[pos];
 }
+
+
+template <typename T>
+template <typename... Args>
+void Vector<T>::emplace_back(Args &&...args) {
+    if (size == capacity) {
+        reserve(capacity * 2);
+    }
+    new (&data[size]) T(std::forward<Args>(args)...);
+    ++size;
+} 
 
 template<typename T>
 void MyVector<T>::pop_back() {
