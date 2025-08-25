@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <cassert>
 #include <algorithm>
+#include <initializer_list>
+#include <memory>
 
 template <typename T>
 class MyVector {
@@ -12,6 +14,9 @@ public:
     using value_type = T;
     using size_type = size_t;
     
+    using pointer = T*;
+    using reference = T&;
+
     class Iterator;
     class ConstIterator;
     class ReverseIterator; 
@@ -46,8 +51,9 @@ public:
     reference at(size_type pos);
     const reference at(size_type pos) const;
 
-    pointer data_();
+    pointer data_() noexcept;
     const pointer data_() const noexcept;
+    
 
     Iterator begin();
     ConstIterator begin() const;
@@ -85,7 +91,7 @@ public:
     void swap(MyVector& other);
     void pop_back();
 
-    template <typename T>
+
 class Iterator{
     public:
         using value_type = T;
@@ -108,10 +114,10 @@ class Iterator{
             return *this;
         }
 
-        Iterator& operator++(int) {
-            iterator tmp = *this;
+        Iterator operator++(int) {
+            Iterator tmp = *this;
             ++ptr;
-            return * tmp;
+            return  tmp;
         }
 
         Iterator& operator--() {
@@ -119,10 +125,10 @@ class Iterator{
             return *this;
         }
 
-        Iterator& operator--(int) {
-            iterator tmp = *this;
+        Iterator operator--(int) {
+            Iterator tmp = *this;
             --ptr;
-            return * tmp;
+            return  tmp;
         }
 
 	bool operator==(const Iterator& other) const {
@@ -203,7 +209,7 @@ public:
         return *this;
     }
     MoveIterator operator++(int) {
-        move_iterator tmp = * this;
+        MoveIterator tmp = * this;
         ++it;
         return tmp;
     }
@@ -213,21 +219,21 @@ public:
         return *this;
     }
     MoveIterator operator--(int) {
-        move_iterator tmp = * this;
+        MoveIterator tmp = * this;
         --it;
         return tmp;
     }
     pointer operator-> () {
-        return it;
+        return it.operator->();
     }
     reference operator*() {
         return std::move(*it);
     }
 
-    bool operator==(const move_iterator& other) {
+    bool operator==(const MoveIterator& other) const{
         return it == other.it;
     }
-    bool operator!=(const move_iterator& other) {
+    bool operator!=(const MoveIterator& other) const {
         return it != other.it;
     }
 };
@@ -242,5 +248,6 @@ template<typename T> bool operator>(const MyVector<T>& obj1, const MyVector<T>& 
 template<typename T> bool operator<=(const MyVector<T>& obj1, const MyVector<T>& obj2);
 template<typename T> bool operator>=(const MyVector<T>& obj1, const MyVector<T>& obj2);
 
+#include "vector.tpp"
 #endif
 

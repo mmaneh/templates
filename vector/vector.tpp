@@ -8,7 +8,7 @@ template<typename T>
 MyVector<T>::MyVector() noexcept : size{0}, capacity{0}, data{nullptr} {}
 
 template<typename T>
-MyVector<T>::MyVector(size_t sz, const value_type& val) : MyVector {} {
+MyVector<T>::MyVector(size_t count, const value_type& val) : MyVector {} {
     data = static_cast<T*>(operator new(sizeof(T) * count));
     try {
         std::uninitialized_fill_n(data, count, value);
@@ -51,7 +51,7 @@ MyVector<T>::MyVector(const std::initializer_list<T>& il) {
         capacity = size = il.size();
     }
     catch(...) {
-        operator delet(data);
+        operator delete(data);
         throw;
     }
 }
@@ -75,7 +75,7 @@ MyVector<T>& MyVector<T>::operator=(MyVector&& other) noexcept {
 
 template <typename T>
 MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T> &il) {
-    Vector<T> tmp(il);
+    MyVector<T> tmp(il);
     swap(tmp);
     return *this;
 }
@@ -143,23 +143,23 @@ const typename MyVector<T>::reference MyVector<T>::at(size_type pos) const {
 }
 
 template<typename T>
-typename MyVector<T>::pointer MyVector<T>::begin() {
-    return data;
+typename MyVector<T>::Iterator MyVector<T>::begin() {
+    return Iterator(data);
 }
 
 template<typename T>
-typename MyVector<T>::pointer MyVector<T>::begin() const {
-    return data;
+typename MyVector<T>::ConstIterator MyVector<T>::begin() const {
+    return ConstIterator(data);
 }
 
 template<typename T>
-typename MyVector<T>::pointer MyVector<T>::end() {
-    return data + size;
+typename MyVector<T>::Iterator MyVector<T>::end() {
+    return Iterator(data + size);
 }
 
 template<typename T>
-typename MyVector<T>::pointer MyVector<T>::end() const {
-    return data + size;
+typename MyVector<T>::ConstIterator MyVector<T>::end() const {
+    return ConstIterator(data + size);
 }
 
 template<typename T>
@@ -183,20 +183,20 @@ void MyVector<T>::reserve(typename MyVector<T>::size_type newCap){
     size_type i = 0;
     try {
         for(; i < size; ++i) {
-            new(&Newdata) T(data[i]);
+            new(&Newdata[i]) T(std::move(data[i]));
         }
     }catch (...){
         for (size_type j = 0; j < size; ++j) {
-            NewData[i].~T();
+            Newdata[i].~T();
         }
         operator delete(Newdata);
         throw;
     }
     size_type tmp = size;
-    clear;
+    clear();
     operator delete(data);
     size = tmp;
-    cpacity = newCap;
+    capacity = newCap;
     data = Newdata;
 }
 template<typename T>
@@ -234,7 +234,7 @@ void MyVector<T>::insert(size_type pos, const value_type& value) {
         operator delete(Newdata);
     }
 
-    for (size_type i = pos; i < size + 1 ; ++i) {
+    for (size_type i = size; i > pos ; --i) {
         new (&Newdata[i]) T(std::move(data[i - 1]));
     }
     
@@ -259,7 +259,7 @@ void MyVector<T>::insert(size_type pos, T&& value) {
     ++size;
 }
 template <typename T>
-void Vector<T>::insert(size_type pos, size_type count, const T& value) {
+void MyVector<T>::insert(size_type pos, size_type count, const T& value) {
     T* newData = nullptr;
     size_type newCapacity = capacity;
 
@@ -299,7 +299,7 @@ void Vector<T>::insert(size_type pos, size_type count, const T& value) {
 
 template <typename T>
 template <typename... Args>
-void Vector<T>::emplace(size_type pos, Args &&...args) {
+void MyVector<T>::emplace(size_type pos, Args &&...args) {
     T* newData = nullptr;
     size_type newCapacity = capacity;
 
@@ -380,7 +380,7 @@ typename MyVector<T>::pointer MyVector<T>::erase(size_type pos) {
 
 template <typename T>
 template <typename... Args>
-void Vector<T>::emplace_back(Args &&...args) {
+void MyVector<T>::emplace_back(Args &&...args) {
     if (size == capacity) {
         reserve(capacity * 2);
     }

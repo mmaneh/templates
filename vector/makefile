@@ -5,8 +5,8 @@ CXXFLAGS = -Wall -Wextra -std=c++17 -O2
 # Target executable
 TARGET = main
 
-# Source files
-SRCS = main.cpp vector.cpp
+# Source files (only .cpp)
+SRCS = main.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # Default target
