@@ -8,10 +8,10 @@ template<typename T>
 MyVector<T>::MyVector() noexcept : size{0}, capacity{0}, data{nullptr} {}
 
 template<typename T>
-MyVector<T>::MyVector(size_t count, const value_type& val) : MyVector {} {
+MyVector<T>::MyVector(size_t count, const value_type& val) : MyVector () {
     data = static_cast<T*>(operator new(sizeof(T) * count));
     try {
-        std::uninitialized_fill_n(data, count, value);
+        std::uninitialized_fill_n(data, count, val);
         size = capacity = count;
     }
     catch(...) {
@@ -47,7 +47,7 @@ MyVector<T>::MyVector(const std::initializer_list<T>& il) {
     data = static_cast<T*>(operator new (sizeof(T) * il.size()));
 
     try{
-        std::uninitialized_copy_n(il.begin(), il.end(), data);
+        std::uninitialized_copy(il.begin(), il.end(), data);
         capacity = size = il.size();
     }
     catch(...) {
@@ -92,7 +92,7 @@ typename MyVector<T>::reference MyVector<T>::operator[](size_type idx) {
 }
 
 template<typename T>
-const typename MyVector<T>::reference MyVector<T>::operator[](size_type idx) const {
+typename MyVector<T>::const_reference MyVector<T>::operator[](size_type idx) const {
     return data[idx];
 }
 
@@ -102,7 +102,7 @@ typename MyVector<T>::reference MyVector<T>::front() {
 }
 
 template<typename T>
-const typename MyVector<T>::reference MyVector<T>::front() const {
+typename MyVector<T>::const_reference MyVector<T>::front() const {
     return data[0];
 }
 
@@ -112,12 +112,12 @@ typename MyVector<T>::reference MyVector<T>::back() {
 }
 
 template<typename T>
-const typename MyVector<T>::reference MyVector<T>::back() const {
+typename MyVector<T>::const_reference MyVector<T>::back() const {
     return data[size - 1];
 }
 
 template <typename T>
-typename MyVector<T>::pointer MyVector<T>::data_() {
+typename MyVector<T>::pointer MyVector<T>::data_() noexcept {
     return data;
 }
 
@@ -135,7 +135,7 @@ typename MyVector<T>::reference MyVector<T>::at(size_type pos) {
 }
 
 template<typename T>
-const typename MyVector<T>::reference MyVector<T>::at(size_type pos) const {
+typename MyVector<T>::const_reference MyVector<T>::at(size_type pos) const {
     if(pos >= size) {
         throw std::out_of_range("out of range");
     }  
@@ -161,6 +161,35 @@ template<typename T>
 typename MyVector<T>::ConstIterator MyVector<T>::end() const {
     return ConstIterator(data + size);
 }
+
+// Non-const rbegin
+template <typename T>
+typename MyVector<T>::template ReverseIterator<typename MyVector<T>::Iterator>
+MyVector<T>::rbegin() {
+    return ReverseIterator<Iterator>(end());
+}
+
+// Const rbegin
+template <typename T>
+typename MyVector<T>::template ReverseIterator<typename MyVector<T>::ConstIterator>
+MyVector<T>::rbegin() const {
+    return ReverseIterator<ConstIterator>(end());
+}
+
+// Non-const rend
+template <typename T>
+typename MyVector<T>::template ReverseIterator<typename MyVector<T>::Iterator>
+MyVector<T>::rend() {
+    return ReverseIterator<Iterator>(begin());
+}
+
+// Const rend
+template <typename T>
+typename MyVector<T>::template ReverseIterator<typename MyVector<T>::ConstIterator>
+MyVector<T>::rend() const {
+    return ReverseIterator<ConstIterator>(begin());
+}
+
 
 template<typename T>
 bool MyVector<T>::empty() const {
@@ -229,7 +258,7 @@ void MyVector<T>::insert(size_type pos, const value_type& value) {
 
     }catch (...){
         for (size_type i = 0; i < size; ++i) {
-            new(data[i]) T(std::move(Newdata[i]));
+            new(&data[i]) T(std::move(Newdata[i]));
         }
         operator delete(Newdata);
     }
@@ -338,7 +367,7 @@ void MyVector<T>::emplace(size_type pos, Args &&...args) {
 }
 
 template<typename T>
-void MyVector<T>::push_back(const reference value) {
+void MyVector<T>::push_back(const_reference value) {
     if(size == capacity) {
         size_type newCapacity = (capacity == 0) ? 1 : capacity * 2;
         pointer newData = new value_type[newCapacity];

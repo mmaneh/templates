@@ -16,11 +16,11 @@ public:
     
     using pointer = T*;
     using reference = T&;
+    using const_reference = const T&;
 
     class Iterator;
     class ConstIterator;
-    class ReverseIterator; 
-   
+
 
 private:
     size_type size;
@@ -40,16 +40,16 @@ public:
     ~MyVector();
 
     reference operator[](size_type idx);
-    const reference operator[](size_type idx) const;
+    const_reference operator[](size_type idx) const;
 
     reference front();
-    const reference front() const;
+    const_reference front() const;
     
     reference back();
-    const reference back() const;
+    const_reference back() const;
 
     reference at(size_type pos);
-    const reference at(size_type pos) const;
+    const_reference at(size_type pos) const;
 
     pointer data_() noexcept;
     const pointer data_() const noexcept;
@@ -61,8 +61,15 @@ public:
     Iterator end();
     ConstIterator end() const;
 
-    ReverseIterator rbegin();
-    ReverseIterator rend();
+    template <typename Iter>
+    class ReverseIterator;  
+
+    ReverseIterator<Iterator> rbegin();
+    ReverseIterator<ConstIterator> rbegin() const;
+
+    ReverseIterator<Iterator> rend();
+    ReverseIterator<ConstIterator> rend() const;
+
 
     bool empty() const;
     
@@ -82,7 +89,7 @@ public:
     void emplace(size_type pos, Args&& ...args);
     pointer erase(size_type pos);
     pointer erase(size_type first, size_type last);
-    void push_back(const reference value);
+    void push_back(const_reference value);
     void push_back(T&& value);
     
     template <typename ... Args>
@@ -94,9 +101,12 @@ public:
 
 class Iterator{
     public:
-        using value_type = T;
-        using pointer = T*;
-        using reference = T&;
+      using iterator_category = std::random_access_iterator_tag;
+      using value_type = T;
+      using difference_type = std::ptrdiff_t;
+      using pointer = T*;
+      using reference = T&;
+
     private:
         pointer ptr;
 
@@ -105,7 +115,7 @@ class Iterator{
         reference operator*() {
             return *ptr;
         }
-        pointer operator->() {
+        pointer operator->() const {
             return ptr;
         }
 
@@ -189,6 +199,104 @@ class ConstIterator {
     };
 
 
+template<typename Iterator>
+ class ReverseIterator {
+    public:
+
+        using value_type = typename std::iterator_traits<Iterator>::value_type;
+        using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+        using pointer = typename std::iterator_traits<Iterator>::pointer;
+        using reference = typename std::iterator_traits<Iterator>::reference;
+
+
+    private:
+
+        Iterator it;
+    
+    public:
+        explicit ReverseIterator(Iterator i) : it{i} {}
+        ReverseIterator(const ReverseIterator& other) : it{other.it} {}  
+        ReverseIterator& operator=(const ReverseIterator& other) {
+            it = other.it;
+            return *this;
+        }
+
+        reference operator*() const{
+            Iterator tmp = it;
+            --tmp;
+            return *tmp;
+        } 
+
+        pointer operator->() const {
+            Iterator tmp = it;
+            --tmp;
+            return tmp.operator->();
+        }
+
+        ReverseIterator& operator++() {
+            --it;
+            return *this;
+        }
+        ReverseIterator operator++(int) {
+            ReverseIterator tmp = *this;
+            --it;
+            return tmp;
+        }
+
+
+        ReverseIterator& operator--() {
+            ++it;
+            return *this;
+        }
+
+        ReverseIterator operator--(int) {
+            ReverseIterator tmp = *this;
+            ++it;
+            return tmp;
+        }
+
+        Iterator base() const {
+            return it;
+        }
+
+        bool operator==(const ReverseIterator& other) const{
+            return it == other.it;
+        }
+
+        bool operator!=(const ReverseIterator& other) const{
+            return it != other.it;
+        }
+ };
+
+
+};
+
+template <typename Container>
+class BackInserterIterator{
+    private:
+        Container * container;
+    public:
+        BackInserterIterator(Container& c) :container(&c) {}
+        BackInserterIterator& operator=(const typename Container::value_type& value) {
+            container->push_back(value);
+            return *this;
+        }
+
+        BackInserterIterator& operator* () {
+            return *this;
+        }
+        BackInserterIterator& operator++ () {
+            return *this;
+        }
+        BackInserterIterator& operator++ (int) {
+            return *this;
+        }
+
+};
+template <typename Container>
+BackInserterIterator<Container> back_inserter(Container& c) {
+    return BackInserterIterator<Container>(c);
+}
 template <typename Iterator>
 class MoveIterator {
 public:
@@ -237,9 +345,6 @@ public:
         return it != other.it;
     }
 };
-
-};
-
 
 template<typename T> bool operator==(const MyVector<T>& obj1, const MyVector<T>& obj2);
 template<typename T> bool operator!=(const MyVector<T>& obj1, const MyVector<T>& obj2);
