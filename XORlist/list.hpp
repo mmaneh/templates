@@ -11,11 +11,11 @@ template <typename T>
 struct XorLinkedList {
    class Node {
        T m_val;
-       XorLinkedList *m_both;
+       Node *m_both;
 
 
-       explicit Node(const T &val = T(), T *both = nullptr);
-       explicit Node(T &&val, T *both = nullptr) noexcept;
+       explicit Node(const T &val = T(), Node *both = nullptr);
+       explicit Node(T &&val, Node *both = nullptr) noexcept;
        ~Node();
    };
 public:
@@ -27,14 +27,14 @@ public:
    using const_pointer = const T*;
 
 
-   class const_iterator;
-   class iterator;
+   class ConstIterator;
+   class Iterator;
    class reverse_iterator;
-   class const_reverse_iterator;
+
 
 
    // static method for Node::m_both pointer
-   static T *XOR(const Node *rhs, const Node *lhs);
+   static Node *XOR(const Node *rhs, const Node *lhs);
 
 
    // Ctors and Dtor
@@ -61,51 +61,42 @@ public:
 
 
    // iterators
-   iterator begin() noexcept;
-   const_iterator begin() const noexcept;
-   const_iterator cbegin() const noexcept;
+   Iterator begin() noexcept;
+   Iterator end() noexcept;
 
 
-   iterator end() noexcept;
-   const_iterator end() const noexcept;
-   const_iterator cend() const noexcept;
-
+   ConstIterator cbegin() const noexcept;
+   ConstIterator cend() const noexcept;
 
    reverse_iterator rbegin() noexcept;
-   const_reverse_iterator rbegin() const noexcept;
-   const_reverse_iterator crbegin() const noexcept;
-
-
    reverse_iterator rend() noexcept;
-   const_reverse_iterator rend() const noexcept;
-   const_reverse_iterator crend() const noexcept;
 
 
    // capacity
    bool empty() const noexcept;
    size_type size() const noexcept;
-   size_type max_size() const noexcept;
+ 
 
 
    // modifiers
    void clear() noexcept;
 
 
-   iterator insert(const_iterator pos, const T &val);
-   iterator insert(const_iterator pos, T &&val);
-   iterator insert(const_iterator pos, size_type count, const T &val);
-   template <typename InputIt>
-   iterator insert(const_iterator pos, InputIt first, InputIt last);
-   iterator insert(const_iterator pos, std::initializer_list<T> ilist);
+//    Iterator insert(const_iterator pos, const T &val);
+//    Iterator insert(const_iterator pos, T &&val);
+//    Iterator insert(const_iterator pos, size_type count, const T &val);
+//    template <typename InputIt>
+//    iterator insert(const_iterator pos, InputIt first, InputIt last);
+//    Iterator insert(const_iterator pos, std::initializer_list<T> ilist);
   
-   template <typename ...Args>
-   iterator emplace(const_iterator pos, Args &&...args);
+//    template <typename ...Args>
+//    Iterator emplace(const_iterator pos, Args &&...args);
 
 
-   iterator erase(iterator pos);
-   iterator erase(const_iterator pos);
-   iterator erase(iterator first, iterator last);
-   iterator erase(const_iterator first, const_iterator last);
+//    Iterator erase(iterator pos);
+//    Iterator erase(const_iterator pos);
+//    Iterator erase(iterator first, iterator last);
+//    Iterator erase(const_iterator first, const_iterator last);
 
 
    void push_back(const T &val);
@@ -148,7 +139,7 @@ public:
         Node* prev;
         Node* curr;
     public:
-        explicit Iterator (const Node* a, const Node* b) : prev{a}, curr{b}  {} 
+        explicit ConstIterator(const Node* a, const Node* b) : prev(a), curr(b)  {} 
 
         reference  operator*() const{
             return curr->m_val;
@@ -157,14 +148,14 @@ public:
             return curr;
         }
         ConstIterator& operator++() {
-            Node* next = XOR(current->both, prev);
-            prev = current;
-            current = next;
+            Node* next = XOR(curr->both, prev);
+            prev = curr;
+            curr = next;
             return *this;
         }
         ConstIterator operator++(int) {
             ConstIterator tmp = *this;
-            (++this)
+            ++(*this);
             return tmp;
         }
 
@@ -178,54 +169,120 @@ public:
         
     };
 
-
 class Iterator {
     public:
         using value_type = T;
         using pointer = T*;
         using reference = T&;
-        using iterator_category = std::forward_iterator_tag;
+        using iterator_category = std::bidirectional_iterator_tag;
         using difference_type = std::ptrdiff_t;
     private:
         Node* prev;
         Node* curr;
     public:
-        explicit Iterator (Node* a, Node* b) : prev{a}, curr{b}  {} 
+        explicit Iterator (Node* a, Node* b) : prev(a), curr(b)  {} 
 
         reference  operator*() {
-            return curr->m_val;
+            return *curr;
         }
         pointer operator->() {
             return curr->m_val;
         }
         Iterator& operator++() {
-            Node* next = XOR(current->both, prev);
-            prev = current;
-            current = next;
+            Node* next = XOR(curr->m_both, prev);
+            prev = curr;
+            curr = next;
             return *this;
         }
         Iterator operator++(int) {
-            Iterato tmp = *this;
-            Node* next = XOR(current->both, prev);
-            (++this);
+            Iterator tmp = *this;
+            Node* next = XOR(curr->both, prev);
+            ++(*this);
             return tmp;
         }
 
-        bool operator==(const iterator& other) const {
+        Iterator& operator--() {
+            Node* next = XOR(curr->both, prev);
+            prev = curr;
+            curr = next;
+            return *this;
+        }
+        Iterator operator--(int) {
+            Iterator tmp = *this;
+            Node* next = XOR(curr->both, prev);
+            ++(*this);
+            return tmp;
+        }
+
+        bool operator==(const Iterator& other) const {
             return curr == other.curr;
         }
 
-        bool operator!=(const iterator& other) const {
+        bool operator!=(const Iterator& other) const {
             return curr != other.curr;
         }
         
 };
 
+class reverse_iterator {
+public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using reference = T&;
 
-   class const_reverse_iterator { ... };
+private:
+    Node* curr;
+    Node* next; 
 
+public:
+    reverse_iterator(Node* a, Node* b)
+        : curr(a), next(b) {}
 
-   class reverse_iterator { ... };
+    reference operator*() const {
+        return curr->m_val;
+    }
+
+    pointer operator->() const {
+        return curr.operator->();
+    }
+
+    reverse_iterator& operator++() {
+        Node* prev = next;
+        next = curr;
+        curr = XOR(curr->m_both, prev);
+        return *this;
+    }
+
+    reverse_iterator operator++(int) {
+        reverse_iterator tmp = *this;
+        ++(*this);
+        return tmp;
+    }
+    reverse_iterator& operator--() {
+    Node* next_node = next;              
+    next = curr;                           
+    curr = XOR(curr->m_both, next_node);   
+    return *this;
+    }
+
+    reverse_iterator& operator--(int) {
+        Node* next_node = next;               
+        next = curr;                           
+        curr = XOR(curr->m_both, next_node);   
+        return *this;
+    }
+
+    bool operator==(const reverse_iterator& other) const {
+        return curr == other.curr && next == other.next;
+    }
+
+    bool operator!=(const reverse_iterator& other) const {
+        return !(*this == other);
+    }
+};
+
 
 
 private:
